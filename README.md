@@ -1,10 +1,10 @@
-echo # 天擎1.0-工业脉冲_省赛项目 > README.md
-echo >> README.md
-echo 基于校赛版升级，适配省赛工业命题。 >> README.md
-echo >> README.md
-echo ## 规划模块 >> README.md
-echo - 规则插拔框架 >> README.md
-echo - MySQL模块 >> README.md
-echo - 爬虫模块 >> README.md
-echo - 可视化 >> README.md
-echo - 可解释AI接口 >> README.md
+# SkyEngine-IndustrialPulse
+天擎·工业脉动引擎 
+将领域知识代码化的混合智能系统，把专家经验变成可执行的规则，与数据模型融合，适配省赛工业命题。
+核心模块:
+· 规则插拔框架 - 动态加载/卸载工业规则 
+· MySQL模块 - 工业数据持久化存储 
+· 爬虫模块 - 自动抓取工业数据 
+· 可视化页面 - Streamlit一键展示 
+· 可解释AI接口 - 让模型输出能被人理解  
+校赛版已跑通，省赛版基于校赛数据处理引擎升级迭代。
