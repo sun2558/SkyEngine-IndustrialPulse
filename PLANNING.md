@@ -1,0 +1,1 @@
+echo # 省赛规划 > PLANNING.md
