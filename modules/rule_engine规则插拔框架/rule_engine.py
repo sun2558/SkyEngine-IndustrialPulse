@@ -12,14 +12,18 @@ conn = pymysql.connect(
 cursor = conn.cursor()
 
 # 1. 读取规则（先只读温度规则，演示自动切换）
-cursor.execute("SELECT rule_name, params FROM rules WHERE rule_type = '3sigma'")
+cursor.execute("SELECT id, rule_name, params FROM rules WHERE rule_name = '温度异常检测'")
 rule = cursor.fetchone()
-rule_name, params_str = rule
-
+if rule is None:
+    print("错误：没有找到规则")
+    exit()
+rule_id, rule_name, params_str = rule
 # 2. 读取温度数据
 cursor.execute("SELECT id, value FROM raw_data WHERE sensor_id = 'temperature' AND value IS NOT NULL")
 rows = cursor.fetchall()
 valid_values = [val for _, val in rows]
+
+print(f"读取到 {len(rows)} 条数据,第一条ID={rows[0][0]}, 最后一条ID={rows[-1][0]}")
 
 if valid_values:
     # 3. 计算偏度，决定用三西格玛还是IQR
@@ -49,3 +53,19 @@ if valid_values:
     for data_id, val in rows:
         if val < lower_bound or val > upper_bound:
             print(f"发现异常: ID={data_id}, 值={val:.2f}")
+            cursor.execute(
+                "INSERT INTO cleaned_data (raw_data_id, timestamp, sensor_id, value, unit, rule_id, is_anomaly) "
+                "VALUES (%s, NOW(), 'temperature', %s, '摄氏度', %s, 1)",
+                (data_id, val, rule_id)
+            )
+    else:
+            cursor.execute(
+                "INSERT INTO cleaned_data (raw_data_id, timestamp, sensor_id, value, unit, rule_id, is_anomaly) "
+                "VALUES (%s, NOW(), 'temperature', %s, '摄氏度', %s, 0)",
+                (data_id, val, rule_id)
+            )
+conn.commit()  # 循环结束后统一提交一次
+print(f"处理完成，共处理 {len(rows)} 条数据")
+
+cursor.close()
+conn.close()
