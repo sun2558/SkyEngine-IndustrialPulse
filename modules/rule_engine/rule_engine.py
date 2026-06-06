@@ -1,3 +1,8 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+from imputation缺失值处理模块 import fill_missing
+from normalization数据标准化流程 import normalize
 import pymysql
 import numpy as np
 from scipy.stats import skew, iqr  # 新增导入
@@ -11,42 +16,45 @@ conn = pymysql.connect(
 )
 cursor = conn.cursor()
 
-# 1. 读取规则（先只读温度规则，演示自动切换）
+# 1. 读取规则
 cursor.execute("SELECT id, rule_name, params FROM rules WHERE rule_name = '温度异常检测'")
 rule = cursor.fetchone()
 if rule is None:
     print("错误：没有找到规则")
     exit()
 rule_id, rule_name, params_str = rule
+
 # 2. 读取温度数据
 cursor.execute("SELECT id, value FROM raw_data WHERE sensor_id = 'temperature' AND value IS NOT NULL")
 rows = cursor.fetchall()
 valid_values = [val for _, val in rows]
 
+# 新增：缺失值填充和标准化
+filled = fill_missing(valid_values)
+normalized = normalize(filled)
+
 print(f"读取到 {len(rows)} 条数据,第一条ID={rows[0][0]}, 最后一条ID={rows[-1][0]}")
 
-if valid_values:
+if len(normalized) > 0:
     # 3. 计算偏度，决定用三西格玛还是IQR
-    skewness = skew(valid_values)
+    skewness = skew(normalized)
     print(f"数据偏度: {skewness:.2f}")
     
     if abs(skewness) > 0.5:
         print("数据偏态严重，使用 IQR 规则")
-        # IQR 逻辑
-        q1 = np.percentile(valid_values, 25)
-        q3 = np.percentile(valid_values, 75)
+        q1 = np.percentile(normalized, 25)
+        q3 = np.percentile(normalized, 75)
         iqr_val = q3 - q1
         lower_bound = q1 - 1.5 * iqr_val
         upper_bound = q3 + 1.5 * iqr_val
     else:
         print("数据近似正态，使用 3σ 规则")
         threshold = eval(params_str).get('threshold', 3)
-        mean = np.mean(valid_values)
-        std = np.std(valid_values)
+        mean = np.mean(normalized)
+        std = np.std(normalized)
         lower_bound = mean - threshold * std
         upper_bound = mean + threshold * std
-        print(f"均值: {mean:.2f}, 标准差: {std:.2f}")
-    
+        print(f"均值: {mean:.2f}, 标准差: {std:.2f}")    
     print(f"正常范围: [{lower_bound:.2f}, {upper_bound:.2f}]")
     
     # 4. 检测异常（逻辑不变）
