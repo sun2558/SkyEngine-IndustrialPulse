@@ -1,11 +1,25 @@
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
-from imputation缺失值处理模块 import fill_missing
-from normalization数据标准化流程 import normalize
 import pymysql
 import numpy as np
-from scipy.stats import skew, iqr  # 新增导入
+from scipy.stats import skew
+
+# 简化版缺失值填充（线性插值）
+def simple_fill_missing(values):
+    arr = np.array(values, dtype=float)
+    mask = np.isnan(arr)
+    if not mask.any():
+        return arr.tolist()
+    indices = np.arange(len(arr))
+    arr[mask] = np.interp(indices[mask], indices[~mask], arr[~mask])
+    return arr.tolist()
+
+# 简化版标准化
+def simple_normalize(values):
+    arr = np.array(values, dtype=float)
+    mean_val = np.mean(arr)
+    std_val = np.std(arr)
+    if std_val == 0:
+        return arr.tolist()
+    return ((arr - mean_val) / std_val).tolist()
 
 conn = pymysql.connect(
     host='localhost',
@@ -29,14 +43,14 @@ cursor.execute("SELECT id, value FROM raw_data WHERE sensor_id = 'temperature' A
 rows = cursor.fetchall()
 valid_values = [val for _, val in rows]
 
-# 新增：缺失值填充和标准化
-filled = fill_missing(valid_values)
-normalized = normalize(filled)
+print(f"读取到 {len(rows)} 条数据")
 
-print(f"读取到 {len(rows)} 条数据,第一条ID={rows[0][0]}, 最后一条ID={rows[-1][0]}")
+# 缺失值填充 + 标准化
+filled = simple_fill_missing(valid_values)
+normalized = simple_normalize(filled)
 
 if len(normalized) > 0:
-    # 3. 计算偏度，决定用三西格玛还是IQR
+    # 3. 计算偏度
     skewness = skew(normalized)
     print(f"数据偏度: {skewness:.2f}")
     
@@ -54,26 +68,31 @@ if len(normalized) > 0:
         std = np.std(normalized)
         lower_bound = mean - threshold * std
         upper_bound = mean + threshold * std
-        print(f"均值: {mean:.2f}, 标准差: {std:.2f}")    
+        print(f"均值: {mean:.2f}, 标准差: {std:.2f}")
+    
     print(f"正常范围: [{lower_bound:.2f}, {upper_bound:.2f}]")
     
-    # 4. 检测异常（逻辑不变）
+    # 4. 检测异常并写入 cleaned_data
     for data_id, val in rows:
-        if val < lower_bound or val > upper_bound:
+        # 原始值标准化
+        orig_mean = np.mean(valid_values)
+        orig_std = np.std(valid_values)
+        norm_val = (val - orig_mean) / orig_std if orig_std > 0 else 0
+        if norm_val < lower_bound or norm_val > upper_bound:
             print(f"发现异常: ID={data_id}, 值={val:.2f}")
             cursor.execute(
                 "INSERT INTO cleaned_data (raw_data_id, timestamp, sensor_id, value, unit, rule_id, is_anomaly) "
                 "VALUES (%s, NOW(), 'temperature', %s, '摄氏度', %s, 1)",
                 (data_id, val, rule_id)
             )
-    else:
+        else:
             cursor.execute(
                 "INSERT INTO cleaned_data (raw_data_id, timestamp, sensor_id, value, unit, rule_id, is_anomaly) "
                 "VALUES (%s, NOW(), 'temperature', %s, '摄氏度', %s, 0)",
                 (data_id, val, rule_id)
             )
-conn.commit()  # 循环结束后统一提交一次
-print(f"处理完成，共处理 {len(rows)} 条数据")
+    conn.commit()
+    print(f"处理完成，共处理 {len(rows)} 条数据")
 
 cursor.close()
 conn.close()
