@@ -56,7 +56,18 @@ def generate_explanation(value, rule_type):
 for anomaly in anomalies:
     data_id, value, rule_type, params_str = anomaly
     params = json.loads(params_str) if params_str else {}
-    result = generate_explanation(value, rule_type)
+    
+    # 根据数值重新判断实际规则类型
+    def determine_rule_type(val):
+        if val >= 80 or val <= -40:
+            return '3sigma'
+        elif -10 <= val < 0:
+            return 'iqr'
+        else:
+            return '混合'
+    
+    actual_rule = determine_rule_type(value)
+    result = generate_explanation(value, actual_rule)
     reason = result['reason']
     suggestion = result['suggestion']
     print(f"ID {data_id}: {reason} -> 建议: {suggestion}")
@@ -64,7 +75,6 @@ for anomaly in anomalies:
         "INSERT INTO explanations (cleaned_data_id, anomaly_reason, suggestion) VALUES (%s, %s, %s)",
         (data_id, reason, suggestion)
     )
-
 conn.commit()
 cursor.close()
 conn.close()
