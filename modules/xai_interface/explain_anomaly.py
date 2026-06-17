@@ -19,43 +19,44 @@ cursor.execute("""
 """)
 anomalies = cursor.fetchall()
 
-def generate_explanation(value):
-    """根据数值生成业务层面的解释和建议"""
+def generate_explanation(value, rule_type):
+    """根据数值和规则类型生成业务解释，并保留触发规则信息"""
+    # 先根据数值确定业务描述
     if value >= 900:
-        return {
-            'reason': f'温度{value}℃：传感器可能断线或短路，请检查传感器连接和线路',
-            'suggestion': '检查传感器接线、更换传感器或校准设备'
-        }
+        reason = f'温度{value}℃：传感器可能断线或短路，请检查传感器连接和线路'
+        suggestion = '检查传感器接线、更换传感器或校准设备'
     elif value <= -40:
-        return {
-            'reason': f'温度{value}℃：传感器可能冻结或损坏，请检查传感器状态和环境温度',
-            'suggestion': '检查传感器是否被冻住、更换传感器或调整安装位置'
-        }
+        reason = f'温度{value}℃：传感器可能冻结或损坏，请检查传感器状态和环境温度'
+        suggestion = '检查传感器是否被冻住、更换传感器或调整安装位置'
     elif -10 <= value < 0:
-        return {
-            'reason': f'温度{value}℃：温度异常偏低，可能存在设备未启动或冷媒泄漏',
-            'suggestion': '检查设备运行状态、排查冷媒系统'
-        }
+        reason = f'温度{value}℃：温度异常偏低，可能存在设备未启动或冷媒泄漏'
+        suggestion = '检查设备运行状态、排查冷媒系统'
     elif value >= 80:
-        return {
-            'reason': f'温度{value}℃：温度持续偏高，可能存在散热不良或工艺参数异常',
-            'suggestion': '检查散热系统、清理积灰、核对工艺设定值'
-        }
+        reason = f'温度{value}℃：温度持续偏高，可能存在散热不良或工艺参数异常'
+        suggestion = '检查散热系统、清理积灰、核对工艺设定值'
     elif value >= 70:
-        return {
-            'reason': f'温度{value}℃：温度偏高，建议关注设备运行状态',
-            'suggestion': '观察设备运行、检查冷却系统'
-        }
+        reason = f'温度{value}℃：温度偏高，建议关注设备运行状态'
+        suggestion = '观察设备运行、检查冷却系统'
     else:
-        return {
-            'reason': f'温度{value}℃：偏离正常范围，建议检查设备或工艺参数',
-            'suggestion': '检查设备状态、核对工艺参数'
-        }
+        reason = f'温度{value}℃：偏离正常范围，建议检查设备或工艺参数'
+        suggestion = '检查设备状态、核对工艺参数'
 
+    # 添加触发规则信息
+    if rule_type == '3sigma':
+        rule_label = '3σ规则(极端异常)'
+    elif rule_type == 'iqr':
+        rule_label = 'IQR规则(偏态异常)'
+    else:
+        rule_label = '混合规则'
+
+    return {
+        'reason': f'{reason}(触发{rule_label})',
+        'suggestion': suggestion
+    }
 for anomaly in anomalies:
     data_id, value, rule_type, params_str = anomaly
     params = json.loads(params_str) if params_str else {}
-    result = generate_explanation(value)
+    result = generate_explanation(value, rule_type)
     reason = result['reason']
     suggestion = result['suggestion']
     print(f"ID {data_id}: {reason} -> 建议: {suggestion}")
