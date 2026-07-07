@@ -29,7 +29,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(MQTT_CONFIG['topic'])
         logging.info(f"订阅Topic: {MQTT_CONFIG['topic']}")
     else:
-        logging.error(f"MQTT连接失败，返回码: {rc}")
+        logging.error(f"MQTT连接失败,返回码: {rc}")
 
 def on_message(client, userdata, msg):
     try:
