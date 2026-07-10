@@ -3,13 +3,13 @@ import random
 
 class MyDataBank(DataBank):
     def read_holding_registers(self, address, count, srv_info):
-        # 保持寄存器（40001）返回模拟温度值
+        print(f"收到读保持寄存器请求: address={address}, count={count}")
         if address == 0:
             return [int(random.uniform(20, 35) * 10)]
         return [0] * count
     
     def read_coils(self, address, count, srv_info):
-        # 线圈地址0返回布尔值1，让网关能读到数据
+        print(f"收到读线圈请求: address={address}, count={count}")
         if address == 0:
             return [1] * count
         return [0] * count
