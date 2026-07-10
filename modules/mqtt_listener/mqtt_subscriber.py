@@ -33,6 +33,7 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     try:
+        print(f"收到原始数据: {msg.payload}")   # 加在这里
         payload = json.loads(msg.payload.decode('utf-8'))
         logging.info(f"收到数据: {payload}")
         
