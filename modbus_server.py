@@ -1,12 +1,17 @@
 from pyModbusTCP.server import DataBank, ModbusServer
 import random
-import time
 
 class MyDataBank(DataBank):
     def get_holding_registers(self, address, number, srv_info):
-        # 模拟温度数据，在寄存器40001返回随机值
-        if address == 0:  # 40001对应的内部地址是0
-            return [int(random.uniform(20, 35) * 10)]  # 20~35℃
+        # 保持寄存器（40001）返回模拟温度值
+        if address == 0:
+            return [int(random.uniform(20, 35) * 10)]
+        return [0] * number
+
+    def get_coils(self, address, number, srv_info):
+        # 线圈地址0返回布尔值1
+        if address == 0:
+            return [1]
         return [0] * number
 
 if __name__ == '__main__':
