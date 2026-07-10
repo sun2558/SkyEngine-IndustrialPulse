@@ -17,7 +17,7 @@ DB_CONFIG = {
 
 # MQTT连接配置
 MQTT_CONFIG = {
-    'broker': '192.168.1.99',          # 改成你电脑的IP（和网关转发通道里填的一样）
+    'broker': '127.0.0.1',          # 改成你电脑的IP（和网关转发通道里填的一样）
     'port': 1883,
     'topic': '#',           # 改成你在网关转发通道里配置的Topic名称
     'client_id': 'tianqing_listener'
