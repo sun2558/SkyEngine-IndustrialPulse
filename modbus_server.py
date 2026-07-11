@@ -10,9 +10,7 @@ class MyDataBank(DataBank):
     
     def read_coils(self, address, count, srv_info):
         print(f"收到读线圈请求: address={address}, count={count}")
-        if address == 0:
-            return [1] * count
-        return [0] * count
+        return [1] * count
 
 if __name__ == '__main__':
     server = ModbusServer(host="0.0.0.0", port=502, data_bank=MyDataBank())
