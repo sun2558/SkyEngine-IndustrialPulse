@@ -73,26 +73,26 @@ if len(normalized) > 0:
     print(f"正常范围: [{lower_bound:.2f}, {upper_bound:.2f}]")
     
     # 4. 检测异常并写入 cleaned_data
-    for data_id, val in rows:
-        # 原始值标准化
-        orig_mean = np.mean(valid_values)
-        orig_std = np.std(valid_values)
-        norm_val = (val - orig_mean) / orig_std if orig_std > 0 else 0
-        if norm_val < lower_bound or norm_val > upper_bound:
-            print(f"发现异常: ID={data_id}, 值={val:.2f}")
-            cursor.execute(
-                "INSERT INTO cleaned_data (raw_data_id, timestamp, sensor_id, value, unit, rule_id, is_anomaly) "
-                "VALUES (%s, NOW(), 'temperature', %s, '摄氏度', %s, 1)",
-                (data_id, val, rule_id)
-            )
-        else:
-            cursor.execute(
-                "INSERT INTO cleaned_data (raw_data_id, timestamp, sensor_id, value, unit, rule_id, is_anomaly) "
-                "VALUES (%s, NOW(), 'temperature', %s, '摄氏度', %s, 0)",
-                (data_id, val, rule_id)
-            )
-    conn.commit()
-    print(f"处理完成，共处理 {len(rows)} 条数据")
+for data_id, val, data_source in rows:
+    # 原始值标准化
+    orig_mean = np.mean(valid_values)
+    orig_std = np.std(valid_values)
+    norm_val = (val - orig_mean) / orig_std if orig_std > 0 else 0
+    if norm_val < lower_bound or norm_val > upper_bound:
+        print(f"发现异常: ID={data_id}, 值={val:.2f}")
+        cursor.execute(
+            "INSERT INTO cleaned_data (raw_data_id, timestamp, sensor_id, value, unit, rule_id, is_anomaly, data_source) "
+            "VALUES (%s, NOW(), 'temperature', %s, '摄氏度', %s, 1, %s)",
+            (data_id, val, rule_id, data_source)
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO cleaned_data (raw_data_id, timestamp, sensor_id, value, unit, rule_id, is_anomaly, data_source) "
+            "VALUES (%s, NOW(), 'temperature', %s, '摄氏度', %s, 0, %s)",
+            (data_id, val, rule_id, data_source)
+        )
+conn.commit()
+print(f"处理完成，共处理 {len(rows)} 条数据")
 
 cursor.close()
 conn.close()

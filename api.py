@@ -23,6 +23,7 @@ def get_anomalies():
         SELECT c.timestamp, c.value, e.anomaly_reason 
         FROM cleaned_data c
         JOIN explanations e ON c.id = e.cleaned_data_id
+        WHERE c.data_source = 'factory'
         ORDER BY c.timestamp DESC 
         LIMIT 50
     """)
