@@ -39,9 +39,9 @@ if rule is None:
 rule_id, rule_name, params_str = rule
 
 # 2. 读取温度数据
-cursor.execute("SELECT id, value FROM raw_data WHERE sensor_id = 'temperature' AND value IS NOT NULL")
+cursor.execute("SELECT id, value, data_source FROM raw_data WHERE sensor_id = 'temperature' AND value IS NOT NULL")
 rows = cursor.fetchall()
-valid_values = [val for _, val in rows]
+valid_values = [val for _, val, _ in rows]
 
 print(f"读取到 {len(rows)} 条数据")
 
